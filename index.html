@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>חזרות: זוויות ומשולשים</title>
+<style>
+  body{font-family:Arial; background:#f5f7fa; margin:0; padding:16px; text-align:center;}
+  h1{margin:8px 0 14px;}
+  .wrap{max-width:920px; margin:0 auto;}
+  .row{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; align-items:center;}
+  .card{background:#fff; border-radius:14px; padding:14px; margin:12px auto; box-shadow:0 2px 10px rgba(0,0,0,.08);}
+  button{padding:10px 14px; font-size:16px; border-radius:10px; border:1px solid #d7dce3; background:#fff; cursor:pointer;}
+  button.primary{background:#1f6feb; color:#fff; border-color:#1f6feb;}
+  button:disabled{opacity:.45; cursor:not-allowed;}
+  .pill{display:inline-block; padding:6px 10px; border-radius:999px; background:#eef2ff; margin:6px 4px; font-size:14px;}
+  .big{font-size:72px; line-height:1; margin:6px 0;}
+  .hint{color:#444; margin:6px 0;}
+  .muted{color:#6b7280; font-size:14px;}
+  .sep{height:1px; background:#eef1f5; margin:12px 0;}
+  .grid{display:grid; gap:10px; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));}
+  .choice{padding:12px; border-radius:12px; border:1px solid #d7dce3; background:#fff;}
+  .choice:hover{border-color:#1f6feb;}
+  .status{font-size:18px; margin-top:8px; min-height:26px;}
+  input[type="text"]{
+    font-size:18px; padding:10px 12px; border-radius:10px;
+    border:1px solid #d7dce3; width:min(520px, 92%);
+    text-align:center;
+  }
+  .kbd{font-family:monospace; background:#f1f5f9; padding:2px 6px; border-radius:6px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📐 חזרות: זוויות ומשולשים (לחיצה + כתיבה)</h1>
+
+  <div class="card">
+    <div class="row">
+      <button class="primary" onclick="show('learn')">📘 לימוד קצר</button>
+      <button class="primary" onclick="show('menu')">🎮 משחקים</button>
+      <button onclick="resetProgress()">🔁 איפוס ניקוד</button>
+    </div>
+    <div class="sep"></div>
+    <div class="row">
+      <span class="pill">ניקוד: <b id="score">0</b></span>
+      <span class="pill">רצף נכון: <b id="streak">0</b> 🔥</span>
+      <span class="pill">שאלה: <b id="qnum">0</b>/<b id="qmax">0</b></span>
+      <span class="pill">טעויות לשחזור: <b id="mist">0</b></span>
+    </div>
+    <p class="muted">טיפ: עשי סט 20 → ואז “חזרות על טעויות” → ואז סט 20 עם כתיבה.</p>
+  </div>
+
+  <!-- לימוד -->
+  <div id="learn" class="card" style="display:none;">
+    <h2>📘 לימוד קצר (רק מה שצריך לזכור)</h2>
+
+    <h3>📐 זוויות</h3>
+    <p><b>זווית חדה</b> — קטנה מ־90° (כמו <b>חץ</b>)</p>
+    <p><b>זווית ישרה</b> — בדיוק 90° (כמו <b>פינה של מחברת</b>)</p>
+    <p><b>זווית קהה</b> — גדולה מ־90° (כמו <b>פה פתוח גדול</b>)</p>
+
+    <h3>🔺 משולשים לפי צלעות</h3>
+    <p><b>שווה צלעות</b> — 3 צלעות שוות (שלושה חברים זהים)</p>
+    <p><b>שווה שוקיים</b> — 2 צלעות שוות (שתי רגליים שוות)</p>
+    <p><b>שונה צלעות</b> — כל הצלעות שונות (כל אחד שונה)</p>
+
+    <div class="sep"></div>
+    <button class="primary" onclick="show('menu')">יאללה למשחקים 🎮</button>
+  </div>
+
+  <!-- תפריט -->
+  <div id="menu" class="card">
+    <h2>🎮 בוחרים משחק</h2>
+
+    <div class="row">
+      <label class="pill">אורך סט:
+        <select id="setSize" onchange="updateSetSize()">
+          <option value="10">10</option>
+          <option value="20" selected>20</option>
+          <option value="30">30</option>
+        </select>
+      </label>
+
+      <label class="pill">נושא:
+        <select id="topic" onchange="updateTopic()">
+          <option value="mix" selected>מעורב</option>
+          <option value="angles">זוויות</option>
+          <option value="triangles">משולשים</option>
+        </select>
+      </label>
+
+      <label class="pill">מצב מבחן:
+        <select id="examMode" onchange="updateExamMode()">
+          <option value="off" selected>כבוי</option>
+          <option value="on">דולק</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="grid" style="margin-top:10px;">
+      <!-- לחיצה -->
+      <button class="choice" onclick="startGame('mcq')">1) לחיצה: מה זה? (רב־ברירה)</button>
+      <button class="choice" onclick="startGame('tf')">2) לחיצה: נכון / לא נכון</button>
+      <button class="choice" onclick="startGame('match')">3) לחיצה: התאמה שם ↔ ציור</button>
+
+      <!-- כתיבה -->
+      <button class="choice" onclick="startGame('type')">4) כתיבה: כתבי את השם</button>
+      <button class="choice" onclick="startGame('fill')">5) כתיבה: השלימי מילה במשפט</button>
+
+      <!-- טעויות -->
+      <button class="choice" onclick="startMistakeReview()">6) חזרות על טעויות</button>
+    </div>
+
+    <p class="muted" id="mistakeTip">אין עדיין טעויות לשחזור — שחקי סט ראשון 🙂</p>
+    <p class="muted">ב”מצב מבחן” רמזים/תשובה יופיעו רק <b>אחרי טעות</b> (כדי לחזק שליפה).</p>
+  </div>
+
+  <!-- משחק -->
+  <div id="game" class="card" style="display:none;">
+    <h2 id="gameTitle">משחק</h2>
+
+    <div id="promptBox">
+      <div class="big" id="symbol">⌟</div>
+      <div class="hint" id="prompt">איזה סוג זה?</div>
+    </div>
+
+    <!-- אזור לחיצות -->
+    <div id="choices" class="grid" style="margin-top:10px;"></div>
+
+    <!-- אזור כתיבה -->
+    <div id="typingArea" style="display:none; margin-top:10px;">
+      <input id="answerInput" type="text" placeholder="כתבי כאן…" autocomplete="off" />
+      <div class="row" style="margin-top:10px;">
+        <button class="primary" onclick="submitTyped()">בדיקה ✅</button>
+        <button id="hintBtn" onclick="giveHint()">רמז 💡</button>
+        <button id="showBtn" onclick="showAnswer()">הצג תשובה 👀</button>
+      </div>
+      <p class="muted" id="hintBox"></p>
+      <p class="muted" id="examNote" style="display:none;">מצב מבחן פעיל: רמז/תשובה יופיעו רק אחרי טעות.</p>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="sep"></div>
+    <div class="row">
+      <button onclick="backToMenu()">⬅️ לתפריט</button>
+      <button class="primary" id="nextBtn" onclick="nextQuestion()">שאלה הבאה ➡️</button>
+    </div>
+
+    <p class="muted" id="extraInfo"></p>
+  </div>
+</div>
+
+<script>
+/* ---------- תוכן ---------- */
+const ANGLES = [
+  { id:"a_acute", type:"angles", label:"חדה", symbol:"∠", prompt:"זווית קטנה מ־90° היא…", fact:"חדה = חץ, קטנה מ־90°" },
+  { id:"a_right", type:"angles", label:"ישרה", symbol:"⌟", prompt:"זווית שהיא בדיוק 90° היא…", fact:"ישרה = פינה, 90°" },
+  { id:"a_obtuse", type:"angles", label:"קהה", symbol:"⦜", prompt:"זווית גדולה מ־90° היא…", fact:"קהה = פה פתוח, גדולה מ־90°" }
+];
+
+const TRIANGLES = [
+  { id:"t_equilateral", type:"triangles", label:"שווה צלעות", symbol:"△", prompt:"משולש עם 3 צלעות שוות הוא…", fact:"שווה צלעות = 3 שוות" },
+  { id:"t_isosceles", type:"triangles", label:"שווה שוקיים", symbol:"🔺", prompt:"משולש עם 2 צלעות שוות הוא…", fact:"שווה שוקיים = 2 שוות" },
+  { id:"t_scalene", type:"triangles", label:"שונה צלעות", symbol:"▲", prompt:"משולש שכל הצלעות שונות הוא…", fact:"שונה צלעות = כולן שונות" }
+];
+
+const TRUE_FALSE = [
+  { topic:"angles", text:"זווית ישרה היא 90°.", answer:true, explain:"נכון. ישרה = 90°." },
+  { topic:"angles", text:"זווית חדה גדולה מ־90°.", answer:false, explain:"לא נכון. חדה קטנה מ־90°." },
+  { topic:"angles", text:"זווית קהה גדולה מ־90°.", answer:true, explain:"נכון. קהה > 90°." },
+  { topic:"triangles", text:"במשולש שווה צלעות כל הצלעות שוות.", answer:true, explain:"נכון. 3 צלעות שוות." },
+  { topic:"triangles", text:"במשולש שווה שוקיים יש שתי צלעות שוות.", answer:true, explain:"נכון. 2 צלעות שוות." },
+  { topic:"triangles", text:"במשולש שונה צלעות כל הצלעות שונות.", answer:true, explain:"נכון. כולן שונות." }
+];
+
+// השלמת מילה במשפט (כתיבה קצרה)
+const FILL_BLANKS = [
+  { topic:"angles", text:"זווית ישרה היא ____ מעלות.", answer:"90", explain:"ישרה = 90°" },
+  { topic:"angles", text:"זווית חדה היא קטנה מ־____ מעלות.", answer:"90", explain:"חדה < 90°" },
+  { topic:"angles", text:"זווית קהה היא גדולה מ־____ מעלות.", answer:"90", explain:"קהה > 90°" },
+  { topic:"triangles", text:"במשולש שווה צלעות יש ____ צלעות שוות.", answer:"3", explain:"3 צלעות שוות" },
+  { topic:"triangles", text:"במשולש שווה שוקיים יש ____ צלעות שוות.", answer:"2", explain:"2 צלעות שוות" }
+];
+
+function poolByTopic(topic){
+  if(topic==="angles") return [...ANGLES];
+  if(topic==="triangles") return [...TRIANGLES];
+  return [...ANGLES, ...TRIANGLES];
+}
+
+const el = (id)=>document.getElementById(id);
+
+/* ---------- מצב ---------- */
+let score = 0, streak = 0;
+let setSize = 20, topic = "mix";
+let examMode = false;
+
+let currentGame = null;
+let questions = [], idx = 0, current = null;
+let mistakes = []; // items לשחזור
+let inMistakeReview = false;
+let hintLevel = 0;
+let hadWrongOnThisQuestion = false;
+
+/* ---------- UI ---------- */
+function show(which){
+  el("learn").style.display = (which==="learn") ? "block" : "none";
+  el("menu").style.display  = (which==="menu") ? "block" : "none";
+  el("game").style.display  = (which==="game") ? "block" : "none";
+  if(which==="menu") updateMistakeTip();
+}
+
+function updateHUD(){
+  el("score").innerText = score;
+  el("streak").innerText = streak;
+  el("qnum").innerText = idx;
+  el("qmax").innerText = questions.length;
+  el("mist").innerText = mistakes.length;
+}
+
+function resetProgress(){
+  score = 0; streak = 0; mistakes = [];
+  updateHUD(); updateMistakeTip();
+  alert("איפסתי ניקוד וטעויות 🙂");
+}
+
+function updateSetSize(){ setSize = parseInt(el("setSize").value, 10); }
+function updateTopic(){ topic = el("topic").value; }
+function updateExamMode(){ examMode = (el("examMode").value === "on"); }
+
+function updateMistakeTip(){
+  el("mistakeTip").innerText = mistakes.length
+    ? `יש ${mistakes.length} שאלות שטעית בהן. מומלץ: “חזרות על טעויות”.`
+    : "אין עדיין טעויות לשחזור — שחקי סט ראשון 🙂";
+}
+
+/* ---------- טעויות ---------- */
+function addMistake(item){
+  const key = JSON.stringify(item);
+  if(!mistakes.some(m => JSON.stringify(m)===key)){
+    mistakes.push(item);
+  }
+  updateMistakeTip();
+}
+
+/* ---------- סטים ---------- */
+function buildSet(game){
+  if(game==="mcq" || game==="match" || game==="type"){
+    const base = poolByTopic(topic);
+    const set = [];
+    for(let i=0;i<setSize;i++){
+      const q = base[Math.floor(Math.random()*base.length)];
+      set.push({ kind: game, data: q });
+    }
+    return set;
+  }
+  if(game==="tf"){
+    const base = TRUE_FALSE.filter(x => topic==="mix" ? true : x.topic===topic);
+    const set = [];
+    for(let i=0;i<setSize;i++){
+      const q = base[Math.floor(Math.random()*base.length)];
+      set.push({ kind:"tf", data:q });
+    }
+    return set;
+  }
+  if(game==="fill"){
+    const base = FILL_BLANKS.filter(x => topic==="mix" ? true : x.topic===topic);
+    const set = [];
+    for(let i=0;i<setSize;i++){
+      const q = base[Math.floor(Math.random()*base.length)];
+      set.push({ kind:"fill", data:q });
+    }
+    return set;
+  }
+  return [];
+}
+
+function startGame(game){
+  inMistakeReview = false;
+  currentGame = game;
+  questions = buildSet(game);
+  idx = 0;
+  show("game");
+  setupGameTitle();
+  nextQuestion();
+}
+
+function startMistakeReview(){
+  if(!mistakes.length){
+    alert("אין כרגע טעויות לשחזור 🙂 שחקי קודם סט אחד.");
+    return;
+  }
+  inMistakeReview = true;
+  currentGame = "mistakes";
+  questions = mistakes.map(m => ({...m}));
+  idx = 0;
+  show("game");
+  setupGameTitle();
+  nextQuestion();
+}
+
+function setupGameTitle(){
+  const titles = {
+    mcq:"1) לחיצה: מה זה? (רב־ברירה)",
+    tf:"2) לחיצה: נכון / לא נכון",
+    match:"3) לחיצה: התאמה שם ↔ ציור",
+    type:"4) כתיבה: כתבי את השם",
+    fill:"5) כתיבה: השלימי מילה במשפט",
+    mistakes:"6) חזרות על טעויות"
+  };
+  el("gameTitle").innerText = titles[currentGame] || "משחק";
+}
+
+function backToMenu(){ show("menu"); }
+
+/* ---------- עזר ---------- */
+function shuffle(arr){
+  const a = [...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function setStatus(msg, ok=null){
+  el("status").innerText = msg;
+  if(ok===true) el("status").style.color = "#2da44e";
+  else if(ok===false) el("status").style.color = "#d1242f";
+  else el("status").style.color = "#111";
+}
+
+function renderChoices(buttons){
+  const box = el("choices");
+  box.innerHTML = "";
+  buttons.forEach(b=>{
+    const btn = document.createElement("button");
+    btn.className = "choice";
+    btn.innerText = b.text;
+    btn.onclick = () => b.onClick();
+    box.appendChild(btn);
+  });
+}
+
+function normalizeHebrew(s){
+  return (s||"")
+    .trim()
+    .replace(/\s+/g," ")
+    .replace(/[״"]/g,"")
+    .replace(/־/g,"-")
+    .toLowerCase();
+}
+
+/* ---------- שאלות ---------- */
+function showTyping(on){
+  el("typingArea").style.display = on ? "block" : "none";
+  el("choices").style.display = on ? "none" : "grid";
+}
+
+function setExamButtonsState(){
+  const show = (!examMode) || hadWrongOnThisQuestion;
+  el("hintBtn").style.display = show ? "inline-block" : "none";
+  el("showBtn").style.display = show ? "inline-block" : "none";
+  el("examNote").style.display = examMode ? "block" : "none";
+}
+
+function nextQuestion(){
+  el("nextBtn").disabled = true;
+  el("extraInfo").innerText = "";
+  el("hintBox").innerText = "";
+  hintLevel = 0;
+  hadWrongOnThisQuestion = false;
+  setStatus("");
+
+  if(idx >= questions.length){
+    setStatus("סיימת את הסט! ⭐️ מומלץ עכשיו: חזרות על טעויות.", true);
+    el("nextBtn").disabled = false;
+    el("nextBtn").innerText = "חזרה לתפריט 🎮";
+    el("nextBtn").onclick = backToMenu;
+    updateHUD();
+    return;
+  }
+
+  el("nextBtn").innerText = "שאלה הבאה ➡️";
+  el("nextBtn").onclick = nextQuestion;
+
+  idx++;
+  updateHUD();
+
+  current = questions[idx-1];
+
+  if(current.kind==="mcq" || current.kind==="match"){
+    showTyping(false);
+    const q = current.data;
+    el("symbol").innerText = q.symbol;
+    el("prompt").innerText = q.prompt;
+
+    const base = poolByTopic(topic);
+    const options = shuffle([q, ...shuffle(base.filter(x=>x.id!==q.id)).slice(0,2)]).map(o=>o.label);
+
+    renderChoices(options.map(opt => ({
+      text: opt,
+      onClick: () => answerClick(opt, q.label, q.fact, current)
+    })));
+
+  } else if(current.kind==="tf"){
+    showTyping(false);
+    const q = current.data;
+    el("symbol").innerText = "✅❓";
+    el("prompt").innerText = q.text;
+
+    renderChoices([
+      { text:"נכון", onClick: ()=>answerTF(true, q.answer, q.explain, current) },
+      { text:"לא נכון", onClick: ()=>answerTF(false, q.answer, q.explain, current) }
+    ]);
+
+  } else if(current.kind==="type"){
+    showTyping(true);
+    const q = current.data;
+    el("symbol").innerText = q.symbol;
+    el("prompt").innerText = "כתבי את השם המדויק:";
+    el("answerInput").value = "";
+    el("answerInput").focus();
+    setExamButtonsState();
+
+  } else if(current.kind==="fill"){
+    showTyping(true);
+    const q = current.data;
+    el("symbol").innerText = "✍️";
+    el("prompt").innerText = q.text;
+    el("answerInput").value = "";
+    el("answerInput").focus();
+    setExamButtonsState();
+  }
+}
+
+/* ---------- תשובות ---------- */
+function finalizeAnswer(correct, explain){
+  if(correct){
+    score += 1; streak += 1;
+    setStatus("⭐️ כל הכבוד! " + explain, true);
+  } else {
+    streak = 0;
+    setStatus("❌ כמעט! " + explain, false);
+  }
+  updateHUD();
+  el("nextBtn").disabled = false;
+}
+
+function answerClick(chosen, right, fact, item){
+  const correct = (chosen === right);
+  if(!correct) addMistake(item);
+  finalizeAnswer(correct, `(${fact})`);
+}
+
+function answerTF(chosen, right, explain, item){
+  const correct = (chosen === right);
+  if(!correct) addMistake(item);
+  finalizeAnswer(correct, explain);
+}
+
+/* ---------- כתיבה ---------- */
+function currentRightAnswer(){
+  if(current.kind==="type") return current.data.label;
+  if(current.kind==="fill") return String(current.data.answer);
+  return "";
+}
+
+function submitTyped(){
+  const right = currentRightAnswer();
+  const typed = el("answerInput").value;
+
+  const ok = normalizeHebrew(typed) === normalizeHebrew(right);
+
+  if(!ok){
+    addMistake(current);
+    hadWrongOnThisQuestion = true;
+    setExamButtonsState();
+  }
+
+  const explain = (current.kind==="type")
+    ? `התשובה: ${right}. (${current.data.fact})`
+    : `התשובה: ${right}. (${current.data.explain})`;
+
+  finalizeAnswer(ok, explain);
+}
+
+function giveHint(){
+  if(examMode && !hadWrongOnThisQuestion) return;
+  const right = currentRightAnswer();
+  hintLevel++;
+
+  if(hintLevel===1){
+    el("hintBox").innerText = `רמז: זה מתחיל ב־ "${right.trim().slice(0,1)}"`;
+  } else if(hintLevel===2){
+    el("hintBox").innerText = `רמז: זה מתחיל ב־ "${right.trim().slice(0,2)}"`;
+  } else {
+    el("hintBox").innerText = `רמז: אורך התשובה הוא ${right.trim().length} תווים`;
+  }
+}
+
+function showAnswer(){
+  if(examMode && !hadWrongOnThisQuestion) return;
+  const right = currentRightAnswer();
+  el("answerInput").value = right;
+  el("hintBox").innerText = "הצגתי את התשובה — עכשיו לחצי בדיקה כדי לקבע 🙂";
+}
+
+/* ---------- התחלה ---------- */
+updateSetSize();
+updateTopic();
+updateExamMode();
+show("menu");
+updateHUD();
+
+// Enter לשליחה
+document.addEventListener("keydown", (e)=>{
+  if(e.key==="Enter" && document.getElementById("typingArea").style.display!=="none"){
+    submitTyped();
+  }
+});
+</script>
+</body>
+</html>
